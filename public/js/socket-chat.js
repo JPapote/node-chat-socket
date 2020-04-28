@@ -1,46 +1,66 @@
 var socket = io();
+var params = new URLSearchParams(window.location.search);
 
-var params = new URLSearchParams(window.location.search)
-
-console.log(params.has('nombre'))
-if(!params.has('nombre') || !params.has('sala')){
+if (!params.has('nombre') || !params.has('sala')) {
     window.location = 'index.html';
-    throw new Error('The name is necesary and thhe sala')
+    throw new Error('El nombre y sala son necesarios');
 }
 
- var data = {
-    nombre : params.get('nombre'),
-    sala : params.get('sala')
- }
+var usuario = {
+    nombre: params.get('nombre'),
+    sala: params.get('sala')
+};
+
+
+
 socket.on('connect', function() {
-    console.log('Conectado al servidor')
+    console.log('Conectado al servidor');
 
-    socket.emit('crearMensaje', {
-        nombre: 'papote',
-        mensaje: 'HOla Javi'
-    })
+    socket.emit('entrarChat', usuario, function(resp) {
+        
+        renderizarUsuarios(resp)
+        
+        
+        // console.log('Usuarios conectados', resp);
+    });
 
-    socket.emit('entrarChat', data, function (resp){
-        console.log(resp)
-       
-    })
-    socket.on('entrarChat', function (resp) {
-        console.log(resp)
-    })
-    socket.on('msjPrivado', function (resp) {
-        console.log(resp)
-    })
+});
+socket.on('entrarChat', function (resp) {
+    renderizarMesaje(resp)
+})
 
-    socket.on('salirChat', function(eliminado) {
-        console.log(eliminado)
-    })
+// escuchar
+socket.on('disconnect', function() {
 
+    console.log('Perdimos conexión con el servidor');
 
 });
 
 
-socket.on('disconnect', function() {
-    console.log('Desconectado');
+// Enviar información
+// 
+
+// Escuchar información
+socket.on('crearMensaje', function(mensaje) {
+    renderizarMesaje(mensaje, false)
+    console.log(mensaje)
+    
+});
+
+// Escuchar cambios de usuarios
+// cuando un usuario entra o sale del chat
+socket.on('listaPersona', function(resp) {
+    renderizarUsuarios(resp)
+    
+});
+
+socket.on('salirChat', function(resp){
+
+    renderizarUsuarios(resp)
 })
+// Mensajes privados
+socket.on('mensajePrivado', function(mensaje) {
 
+    console.log('Mensaje Privado:', mensaje);
 
+});

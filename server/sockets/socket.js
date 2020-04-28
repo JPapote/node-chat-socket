@@ -4,15 +4,6 @@ const {crearMensaje}  = require('../utilidades/utilidades')
 let usuario = new Usuarios();
 io.on('connection', (client) => {
 
-    client.on('crearMensaje', (data) => {
-        let persona = usuario.getPersona(client.id);
-
-        let mensaje = crearMensaje(persona, data.mensaje);
-        client.broadcast.to(client.sala).emit('crearMensaje', {mensaje: crearMensaje(persona,`${mensaje} abandono el chat`)})
-
-
-    })
-
     client.on('entrarChat', (data, callback) => {
         // console.log(nombre)
 
@@ -27,24 +18,32 @@ io.on('connection', (client) => {
         let persona = usuario.agregarPersona(client.id, data.nombre, data.sala)
          let usuarioN= usuario.getPersona(client.id);
          let usuariosSalas = usuario.getPersonaPorSala(data.sala)
-        client.broadcast.to(data.sala).emit('entrarChat', {mensaje:crearMensaje('Administrador',`${usuarioN} se a unido al chat`)})
+         client.broadcast.to(data.sala).emit('listaPersona', usuario.getAllPersonas())
+        client.broadcast.to(data.sala).emit('entrarChat', crearMensaje('Administrador',`${usuarioN} se a unido al chat`))
         callback(usuariosSalas);
+
 
         client.on('disconnect', ()=> {
             let desconectado = usuario.removePersona(client.id);
-            console.log();
-             client.broadcast.to(data.sala).emit('salirChat', {mensaje: crearMensaje('Administrador',`${desconectado} abandono el chat`)})
-        })
+          client.broadcast.to(data.sala).emit('listaPersona',  usuario.getAllPersonas())
+         client.broadcast.to(data.sala).emit('salirChat', crearMensaje('Administrador',`${data.nombre} abandono el chat`))
+        
+            })
+            
 
     })
+    client.on('crearMensaje', (data, callback) => {
+        let persona = usuario.getPersona(client.id);
+        let mensaje = crearMensaje(persona, data.mensaje);
+        client.broadcast.to(data.sala).emit('crearMensaje', mensaje)
 
-    
+        callback(mensaje)
+
+    })
 
     client.on('msjPrivado', data => {
         let privado = usuario.getPersona(client.id);
         client.broadcast.to(data.para).emit('msjPrivado', {mensaje: crearMensaje(`${privado}`, `${data.mensaje}`)})
 
     })
-
-    
 })
